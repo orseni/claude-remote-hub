@@ -43,3 +43,6 @@ node_modules/
 
 # Generated
 ttyd-index.html
+
+# Local articles/drafts
+article-medium.md

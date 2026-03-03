@@ -392,20 +392,33 @@
 
   connectTerminal();
 
-  // Browsers may kill WebSocket when tab goes to background — reconnect on resume
+  // Browsers may kill WebSocket when tab goes to background — only reconnect if needed
   document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible' && iframe.src) {
-      var src = iframe.src;
-      iframe.src = '';
-      loading.classList.remove('hidden');
-      loadingText.textContent = 'Reconnecting...';
-      setTimeout(function() {
-        iframe.src = src;
-        iframe.onload = function() { loading.classList.add('hidden'); };
-        setTimeout(function() { loading.classList.add('hidden'); }, 2000);
-      }, 100);
-    }
+    if (document.visibilityState !== 'visible' || !iframe.src) return;
+    // Check if ttyd is still reachable before forcing a reload
+    fetch('/api/ttyd-ready/' + encodeURIComponent(SESSION))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data.ready) {
+          reloadTerminal();
+        }
+      })
+      .catch(function() {
+        reloadTerminal();
+      });
   });
+
+  function reloadTerminal() {
+    var src = iframe.src;
+    iframe.src = '';
+    loading.classList.remove('hidden');
+    loadingText.textContent = 'Reconnecting...';
+    setTimeout(function() {
+      iframe.src = src;
+      iframe.onload = function() { loading.classList.add('hidden'); };
+      setTimeout(function() { loading.classList.add('hidden'); }, 2000);
+    }, 100);
+  }
 
   function showToast(msg) {
     var t = document.getElementById('toast');
