@@ -145,6 +145,21 @@ def _get_process_cwd(pid: int) -> Optional[str]:
     return None
 
 
+def _has_conversation_content(filepath: str) -> bool:
+    """Check if a session .jsonl file has actual conversation messages."""
+    try:
+        with open(filepath, "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                if '"userType"' in line:
+                    return True
+        return False
+    except (OSError, UnicodeDecodeError):
+        return False
+
+
 def _find_latest_session_id(cwd: str) -> Optional[str]:
     """Find the most recent Claude session ID for a given project directory."""
     # Claude stores sessions in ~/.claude/projects/<key>/<session_id>.jsonl
@@ -162,13 +177,16 @@ def _find_latest_session_id(cwd: str) -> Optional[str]:
     if not os.path.isdir(project_dir):
         return None
 
-    # Find the most recent .jsonl file
+    # Find .jsonl files sorted by most recent first, skip metadata-only files
     jsonl_files = _glob.glob(os.path.join(project_dir, "*.jsonl"))
     if not jsonl_files:
         return None
 
-    latest = max(jsonl_files, key=os.path.getmtime)
-    return os.path.splitext(os.path.basename(latest))[0]
+    for filepath in sorted(jsonl_files, key=os.path.getmtime, reverse=True):
+        if _has_conversation_content(filepath):
+            return os.path.splitext(os.path.basename(filepath))[0]
+
+    return None
 
 
 def port_for_name(name: str) -> int:
@@ -463,9 +481,12 @@ def start_session(name: str, directory: Optional[str] = None, skip_permissions: 
         cmd.append(CLAUDE_BIN)
         if skip_permissions:
             cmd.append("--dangerously-skip-permissions")
+        # Strip CLAUDECODE to prevent "cannot launch inside another session" error
+        clean_env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
         subprocess.Popen(
             cmd,
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            env=clean_env
         )
         time.sleep(0.5)
         subprocess.run([TMUX_BIN, "set-option", "-t", session, "mouse", "on"],
@@ -510,8 +531,27 @@ def capture_session(pid: int, session_id: Optional[str], cwd: str,
     if skip_permissions:
         cmd.append("--dangerously-skip-permissions")
 
-    subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # Strip CLAUDECODE to prevent "cannot launch inside another session" error
+    clean_env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
+    subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     env=clean_env)
     time.sleep(0.5)
+
+    # Verify the tmux session survived (claude might have failed and exited)
+    r = subprocess.run([TMUX_BIN, "has-session", "-t", session],
+                       capture_output=True)
+    if r.returncode != 0:
+        # Session died — fall back to --continue if we were using --resume
+        if session_id:
+            cmd_fallback = [TMUX_BIN, "new-session", "-d", "-s", session]
+            if cwd and os.path.isdir(cwd):
+                cmd_fallback += ["-c", cwd]
+            cmd_fallback += [CLAUDE_BIN, "--continue"]
+            if skip_permissions:
+                cmd_fallback.append("--dangerously-skip-permissions")
+            subprocess.Popen(cmd_fallback, stdout=subprocess.DEVNULL,
+                             stderr=subprocess.DEVNULL, env=clean_env)
+            time.sleep(0.5)
 
     subprocess.run([TMUX_BIN, "set-option", "-t", session, "mouse", "on"],
                    capture_output=True)
