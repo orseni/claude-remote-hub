@@ -543,6 +543,53 @@
     letter-spacing: 0.5px;
   }
 
+  /* ── Pull to Refresh ── */
+  .ptr-indicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 900;
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .ptr-spinner {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-40px);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    opacity: 0;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .ptr-spinner svg {
+    width: 18px;
+    height: 18px;
+    stroke: var(--accent);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    transition: transform 0.15s ease;
+  }
+
+  .ptr-spinner.refreshing svg {
+    animation: ptr-spin 0.8s linear infinite;
+  }
+
+  @keyframes ptr-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
   /* ── Animations ── */
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }
@@ -637,6 +684,11 @@
 </style>
 </head>
 <body>
+  <div class="ptr-indicator" id="ptr-indicator">
+    <div class="ptr-spinner" id="ptr-spinner">
+      <svg viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+    </div>
+  </div>
   <div class="header">
     <span class="logo">
       <span class="logo-prompt">&gt;_ </span><span class="logo-text">claude remote hub</span><span class="logo-cursor"></span>
@@ -969,6 +1021,50 @@
   };
 
   loadCapturable();
+
+  // ── Pull to Refresh ──
+  (function() {
+    var startY = 0;
+    var pulling = false;
+    var threshold = 80;
+    var spinner = document.getElementById('ptr-spinner');
+    var svgEl = spinner.querySelector('svg');
+
+    document.addEventListener('touchstart', function(e) {
+      if (window.scrollY === 0 && !document.querySelector('.modal-overlay.active')) {
+        startY = e.touches[0].clientY;
+        pulling = true;
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchmove', function(e) {
+      if (!pulling) return;
+      var dy = e.touches[0].clientY - startY;
+      if (dy < 0) { pulling = false; return; }
+      var progress = Math.min(dy / threshold, 1);
+      var translateY = Math.min(dy * 0.4, 50) - 40;
+      spinner.style.transform = 'translateY(' + translateY + 'px)';
+      spinner.style.opacity = progress;
+      spinner.style.transition = 'none';
+      svgEl.style.transform = 'rotate(' + (progress * 180) + 'deg)';
+    }, { passive: true });
+
+    document.addEventListener('touchend', function() {
+      if (!pulling) return;
+      pulling = false;
+      var currentOpacity = parseFloat(spinner.style.opacity) || 0;
+      if (currentOpacity >= 1) {
+        spinner.style.transition = 'transform 0.2s ease';
+        spinner.style.transform = 'translateY(10px)';
+        spinner.classList.add('refreshing');
+        setTimeout(function() { location.reload(); }, 400);
+      } else {
+        spinner.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+        spinner.style.transform = 'translateY(-40px)';
+        spinner.style.opacity = '0';
+      }
+    }, { passive: true });
+  })();
 </script>
 </body>
 </html>
