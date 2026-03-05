@@ -39,7 +39,7 @@ After editing files, deploy to the local instance:
 ```bash
 cp claude-remote-hub.py ~/.claude-remote-hub/claude-remote-hub.py
 cp templates/*.html ~/.claude-remote-hub/templates/
-pkill -f "ttyd.*-p 77"
+pkill -f "ttyd.*-p 77[0-9][0-9]"
 ~/.claude-remote-hub/ctl.sh restart
 ```
 
