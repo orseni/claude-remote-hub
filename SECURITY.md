@@ -8,7 +8,8 @@ Claude Remote Hub is designed to be accessed exclusively through a [Tailscale](h
 - **HTTPS support** with TLS 1.2+ and modern cipher suites (ECDHE+AESGCM/CHACHA20) via Tailscale's Let's Encrypt certificates
 - **No additional authentication** — Tailscale already authenticates every device on the network
 - **Sessions run as your OS user** — same permissions as a local terminal session
-- **Input validation** — special key whitelist, path traversal prevention on folder picker, paste size limits (10KB)
+- **Input validation** — special key whitelist, path traversal prevention on folder picker, paste size limits (10KB), safe session names
+- **Request hardening** — state-changing actions use POST APIs with CSRF tokens and same-origin checks
 
 ## What IS a Security Concern
 

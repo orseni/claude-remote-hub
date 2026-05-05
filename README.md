@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.1.0-E8734A?style=flat-square" alt="v3.1.0">
+  <img src="https://img.shields.io/badge/version-3.2.7-E8734A?style=flat-square" alt="v3.2.7">
   <img src="https://img.shields.io/badge/python-3.9+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python 3.9+">
   <img src="https://img.shields.io/badge/macOS-supported-000?style=flat-square&logo=apple&logoColor=white" alt="macOS">
   <img src="https://img.shields.io/badge/Linux-supported-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux">
@@ -195,6 +195,8 @@ All settings are optional environment variables:
 | `CLAUDE_FONT_SIZE` | `11` | Terminal font size |
 | `CLAUDE_DEV_ROOT` | `~/Projects` | Root directory for the folder picker |
 | `CLAUDE_REMOTE_HUB_DIR` | `~/.claude-remote-hub` | Installation directory |
+| `CLAUDE_REMOTE_HUB_CSRF_TOKEN` | random at startup | Override CSRF token for state-changing API calls |
+| `CLAUDE_CAPTURABLE_CACHE_TTL` | `5` | Seconds to cache process discovery for capturable sessions |
 | `TTYD_BIN` | auto-detected | Path to ttyd binary |
 | `TMUX_BIN` | auto-detected | Path to tmux binary |
 | `CLAUDE_BIN` | auto-detected | Path to Claude CLI binary |
@@ -206,19 +208,21 @@ Set these in your shell profile (`~/.bashrc`, `~/.zshrc`) or in the service conf
 | Method | Route | Description |
 |---|---|---|
 | GET | `/` | Dashboard |
-| GET | `/start/{name}` | Create/resume a session |
 | GET | `/terminal/{name}` | Terminal wrapper page |
-| GET | `/stop/{name}` | Stop a session |
 | GET | `/api/sessions` | List sessions (JSON) |
 | GET | `/api/ttyd-ready/{name}` | Check if ttyd is ready |
 | GET | `/api/folders?path=` | Browse directories |
 | GET | `/api/capturable` | List capturable CLI sessions (JSON) |
-| GET | `/capture` | Capture a running CLI session |
 | GET | `/cert` | Download SSL certificate |
 | GET | `/icon.png` | App icon |
+| POST | `/api/start` | Create/resume a session |
+| POST | `/api/stop` | Stop a session |
+| POST | `/api/capture` | Capture a running CLI session |
 | POST | `/api/send-keys/{name}` | Send special key to terminal |
 | POST | `/api/send-text/{name}` | Send text (paste) to terminal |
 | POST | `/api/scroll/{name}` | Scroll terminal (PgUp/PgDn) |
+
+State-changing POST routes require the `X-CSRF-Token` header generated into the served dashboard/terminal pages.
 
 ## Project Structure
 
@@ -228,7 +232,11 @@ claude-remote-hub/
 ├── templates/
 │   ├── hub.html               # Dashboard (mobile-first, dark theme)
 │   └── terminal.html          # Terminal wrapper + virtual keyboard
+├── tests/                     # Unit tests for server helpers
+├── pyproject.toml             # Ruff configuration
 ├── install.sh                 # Cross-platform installer
+├── tools/
+│   └── patch_ttyd_index.py    # Patch installed ttyd UI with mobile controls
 ├── icon_chub.png              # App icon
 ├── LICENSE                    # MIT
 ├── CONTRIBUTING.md            # Contribution guidelines

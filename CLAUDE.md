@@ -19,7 +19,7 @@ Phone/Browser  ←── Tailscale (VPN) ──→  Computer
 
 - `claude-remote-hub.py` — HTTP server (stdlib `http.server`). Config, platform detection, helpers, session management, HTTP handler, CLI.
 - `templates/hub.html` — Dashboard HTML/CSS/JS. Placeholders: `{{SESSION_CARDS}}`, `{{COUNT_TEXT}}`, `{{VERSION}}`.
-- `templates/terminal.html` — Terminal wrapper HTML/CSS/JS with 2-row virtual keyboard. Placeholders: `{{SESSION_NAME}}`, `{{TERMINAL_URL}}`.
+- `templates/terminal.html` — Terminal wrapper HTML/CSS/JS with 2-row virtual keyboard. Placeholders: `{{SESSION_NAME_HTML}}`, `{{SESSION_NAME_JSON}}`, `{{TERMINAL_URL_JSON}}`, `{{CSRF_TOKEN}}`.
 - `install.sh` — Cross-platform installer (macOS/Linux/WSL2). Auto-detects OS and package manager.
 
 ### Key code sections in `claude-remote-hub.py`
@@ -74,7 +74,7 @@ pkill -f "ttyd.*-p 77[0-9][0-9]"
 
 - All code, comments, and documentation in English
 - Version in `VERSION` constant in `claude-remote-hub.py`
-- No automated tests or linter configured
+- Automated tests use stdlib `unittest`; linting is configured through Ruff
 - Session names map to ports via MD5 hash (7700-7799)
 - HTTPS via Tailscale certs, TLS 1.2+
 - ThreadedHTTPServer for parallel requests

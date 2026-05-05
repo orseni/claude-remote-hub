@@ -5,6 +5,72 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.7] - 2026-05-04
+
+### Fixed
+- Restored touch-drag scrolling when direct xterm viewport scrolling is unavailable by falling back to wheel events and tmux copy-mode paging
+- Suppressed immediate refocus after fallback scrolling so tmux copy-mode is not exited before the user can read scrollback
+
+## [3.2.6] - 2026-05-03
+
+### Fixed
+- Native mobile keyboard handling now reserves explicit bottom space in ttyd instead of relying only on viewport height changes
+- Added VirtualKeyboard API support and a touch-focus fallback for browsers that do not report keyboard overlap through `visualViewport`
+
+## [3.2.5] - 2026-05-03
+
+### Fixed
+- Removed the recursive resize loop introduced by the mobile native-keyboard viewport adjustment, which could leave ttyd stuck on a blank/gray screen
+- Added a minimum viewport height guard before applying mobile keyboard height overrides
+
+## [3.2.4] - 2026-05-03
+
+### Fixed
+- Mobile terminal height now tracks `visualViewport` while the native keyboard is open, keeping the prompt/input area visible above the keyboard
+- The virtual shortcut bar is hidden while the native keyboard is open to preserve more terminal space
+
+## [3.2.3] - 2026-05-03
+
+### Fixed
+- Touch scrolling no longer falls back to tmux copy-mode during finger drags, preventing native mobile keyboard input from getting trapped after scrolling
+- Terminal taps now explicitly refocus xterm and exit tmux copy-mode only when it is active, so native keyboard input resumes without requiring the virtual `Esc` key
+
+## [3.2.2] - 2026-05-03
+
+### Fixed
+- Custom ttyd mobile layout now targets `#terminal-container` explicitly so touch-scroll controls do not reduce terminal width or cause extra line wrapping
+- Embedded ttyd now hides duplicate mobile chrome/padding from the patched direct view, preserving more usable terminal space
+- Added resize refits after mobile chrome/keyboard layout changes to keep xterm columns aligned
+
+## [3.2.1] - 2026-05-03
+
+### Changed
+- Terminal wrapper now passes hub origin, session, and CSRF token to the custom ttyd page for mobile controls
+- CORS/same-origin checks now allow the hub's managed ttyd ports (`7700-7799`) to call CSRF-protected APIs
+
+### Fixed
+- Custom ttyd mobile keyboard compatibility after CSRF hardening in 3.2.0
+
+## [3.2.0] - 2026-05-03
+
+### Added
+- CSRF-protected POST APIs for starting, stopping, capturing, and controlling sessions
+- Unit tests for session validation, path traversal prevention, template escaping, and port collision handling
+- GitHub Actions CI for syntax checks, Ruff linting, and unit tests
+- Short cache for capturable session discovery to reduce dashboard process scans
+
+### Changed
+- Terminal URLs now use HTTP or HTTPS based on the configured hub certificates
+- Dashboard actions now call JSON APIs instead of state-changing GET routes
+- Session names, route parameters, rendered HTML, and JavaScript literals are validated or escaped consistently
+- Session port assignment now resolves hash collisions within the configured port range
+- Terminal readiness checks use a lightweight socket probe instead of repeated `lsof` calls
+- Mobile/frontend states now expose clearer terminal readiness failures and improved accessibility labels/focus styles
+
+### Fixed
+- Path traversal prevention now uses `commonpath` instead of prefix string matching
+- Session capture now verifies the target PID against freshly discovered capturable Claude CLI processes
+
 ## [3.1.0] - 2026-03-01
 
 ### Added
